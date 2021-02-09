@@ -1,5 +1,6 @@
 const photoFile = document.getElementById('photo-file')
-let image = document.getElementById('photo-preview')
+let photoPreview = document.getElementById('photo-preview')
+let image = new Image()
 
 // selecao e pre-visualizacao
 document.getElementById('select-image')
@@ -69,10 +70,76 @@ const events = {
 
         relativeEndX = event.layerX
         relativeEndY = event.layerY
+
+        // mostra o botao de corte
+        cropButton.style.display = 'initial'
     }
 }
 
 Object.keys(events)
     .forEach(eventName => {
-        image.addEventListener(eventName, events[eventName])
+        photoPreview.addEventListener(eventName, events[eventName])
     })
+
+// Canvas
+let canvas = document.createElement('canvas')
+let ctx = canvas.getContext('2d')
+
+image.onload = function() {
+    const {width, height} = image
+    canvas.width = image.width
+    canvas.height = image.height
+
+    // limpar o contexto
+    ctx.clearRect(0, 0, width, height)
+
+    // desenhar a imagem no contexto
+    ctx.drawImage(image, 0, 0) // eixoX: 0, eixoY: 0
+    
+    photoPreview.src = canvas.toDataURL()
+}
+
+// cortar imagem
+const cropButton = document.getElementById('crop-image')
+cropButton.onclick = () => {
+    const {width:imgW, height: imgH} = image
+    const {width: previewW, height: previewH} = photoPreview
+
+    const [widthFactor, heightFactor] = [
+        +(imgW / previewW), +(imgH / previewH)
+    ]
+
+    const [selectionWidth, selectionHeight] = [
+        +selection.style.width.replace('px', ''),
+        +selection.style.height.replace('px', '')
+    ]
+
+    const [croppedWidth, croppedHeight] = [
+        +(selectionWidth * widthFactor),
+        +(selectionHeight * heightFactor)
+    ]
+
+    const [actualX, actualY] = [
+        +(relativeStartX * widthFactor),
+        +(relativeStartY * widthFactor)
+    ]
+
+    // pegar do contexto a imagem cortada
+    const croppedImage = ctx.getImageData(actualX, actualY, croppedWidth, croppedHeight)
+
+    // limpar o contexto
+    ctx.clearRect(0, 0, ctx.width, ctx.height)
+
+    //ajuste de proporções
+    image.width = canvas.width = croppedWidth
+    image.height = canvas.heights = croppedHeight
+
+    // adicionar imagem cortada ao contexto
+    ctx.putImageData(croppedImage, 0, 0)
+
+    // esconder a ferramenta de selecao
+    selection.style.display = 'none'
+
+    // atualizar o preview da imagem 
+    photoPreview.src = canvas.toDataURL()
+}
