@@ -1,6 +1,7 @@
 const photoFile = document.getElementById('photo-file')
 let photoPreview = document.getElementById('photo-preview')
-let image = new Image()
+let image
+let photoName
 
 // selecao e pre-visualizacao
 document.getElementById('select-image')
@@ -14,12 +15,14 @@ window.addEventListener('DOMContentLoaded', () => {
     photoFile.addEventListener('change', () => {
         // capturando apenas um arquivo
         let file = photoFile.files.item(0)
+        photoName = file.name
         // leitura de arquivo
         let reader = new FileReader()
         reader.readAsDataURL(file)
         reader.onload = function(event) {
-            
+            image = new Image()
             image.src = event.target.result
+            image.onload = onLoadImage
         }
     })
 })
@@ -38,12 +41,6 @@ const events = {
     },
     mousedown(){
         const {clientX, clientY, offsetX, offsetY} = event
-        
-        /*console.table({
-            'client': [clientX, clientY],
-            'offset': [offsetX, offsetY]
-        })*/
-
         startX = clientX
         startY = clientY
         relativeStartX = offsetX
@@ -85,10 +82,10 @@ Object.keys(events)
 let canvas = document.createElement('canvas')
 let ctx = canvas.getContext('2d')
 
-image.onload = function() {
+function onLoadImage() {
     const {width, height} = image
-    canvas.width = image.width
-    canvas.height = image.height
+    canvas.width = width
+    canvas.height = height
 
     // limpar o contexto
     ctx.clearRect(0, 0, width, height)
@@ -121,7 +118,7 @@ cropButton.onclick = () => {
 
     const [actualX, actualY] = [
         +(relativeStartX * widthFactor),
-        +(relativeStartY * widthFactor)
+        +(relativeStartY * heightFactor)
     ]
 
     // pegar do contexto a imagem cortada
@@ -132,7 +129,7 @@ cropButton.onclick = () => {
 
     //ajuste de proporções
     image.width = canvas.width = croppedWidth
-    image.height = canvas.heights = croppedHeight
+    image.height = canvas.height = croppedHeight
 
     // adicionar imagem cortada ao contexto
     ctx.putImageData(croppedImage, 0, 0)
@@ -142,4 +139,17 @@ cropButton.onclick = () => {
 
     // atualizar o preview da imagem 
     photoPreview.src = canvas.toDataURL()
+
+    // mostrar botao de download
+    downloadButton.style.display = 'initial'
+
 }
+
+// Download
+const downloadButton = document.getElementById('download')
+downloadButton.addEventListener('click', () => {
+    const a = document.createElement('a')
+    a.download = `${photoName}-corte.png`
+    a.href = canvas.toDataURL()
+    a.click()
+})
